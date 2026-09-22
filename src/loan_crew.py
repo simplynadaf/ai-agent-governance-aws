@@ -41,7 +41,7 @@ import os
 from strands import Agent
 from strands.models import BedrockModel
 
-from traccia import init, observe, get_current_span, force_flush, span as traccia_span
+from traccia import init, observe, get_current_span, force_flush, span as traccia_span, runtime_config
 from traccia.governance import disclosure
 from traccia.governance.hooks import enrich_governance_attributes
 from traccia.guardrails import guardrail_span
@@ -109,13 +109,13 @@ def credit_risk(applicant_id: str) -> dict:
     score = credit_score(applicant_id)                 # deterministic mock (dict)
 
     # Attempt an external bureau pull. For EU applicants this raises a denial error, which
-    # Traccia's Tier-C heuristic guardrail detects on the errored tool span. We catch it so the
-    # crew degrades gracefully (real systems route to a regional connector).
+    # Traccia's Tier-C heuristic guardrail detects on the errored tool span. We catch it so
+    # the crew degrades gracefully (real systems route to a regional connector).
     bureau_note = "bureau pull skipped"
     try:
         pull_bureau_report(applicant_id, region=a.region)
         bureau_note = "bureau report clean"
-    except ToolPermissionDenied as e:
+    except ToolPermissionDenied:
         bureau_note = f"bureau pull denied ({a.region}); proceeding on mock score only"
 
     # A short LLM reasoning step over the (already computed) real numbers.
@@ -178,9 +178,13 @@ def guarded_run(applicant_id: str, raw_request: str | None = None) -> dict:
     with guardrail_span("pii_scanner", category="pii", enforcement_mode="warn") as gs:
         gs.set_attribute("guardrail.triggered", ("@" in text) or any(c.isdigit() for c in text))
 
-    # Crew: intake -> credit_risk -> policy.
-    intake(applicant_id)
-    cr = credit_risk(applicant_id)
+    # Crew: intake -> credit_risk -> policy. Each runs under its OWN agent identity so it
+    # registers as a distinct agent on the Traccia dashboard (run_identity wraps the call so
+    # the @observe agent span is stamped with the right agent.id, per agent_config.json).
+    with runtime_config.run_identity(agent_id="intake", agent_name="Intake"):
+        intake(applicant_id)
+    with runtime_config.run_identity(agent_id="credit-risk", agent_name="Credit & Risk"):
+        cr = credit_risk(applicant_id)
     score_obj = cr["score"]
 
     # [G12] Fairness guardrail: block if any protected attribute drove the score.
@@ -188,7 +192,8 @@ def guarded_run(applicant_id: str, raw_request: str | None = None) -> dict:
         span.set_attribute("demo.crew.blocked", True)
         raise GuardrailBlock("output_validation", "Fairness violation: a protected attribute influenced the score.")
 
-    pol = policy(applicant_id, score_obj["score"], score_obj["band"])
+    with runtime_config.run_identity(agent_id="policy", agent_name="Policy"):
+        pol = policy(applicant_id, score_obj["score"], score_obj["band"])
     recommendation = pol["note"]
 
     # [G11] Output-validation guardrail: block absolute/unsafe claims.
