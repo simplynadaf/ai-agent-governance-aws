@@ -61,6 +61,10 @@ Applies a synthetic lending policy and returns a one-line illustrative pre-scree
 
 ## 🧠 How It Works — Traccia's two governance layers
 
+<div align="center">
+<img src="docs/architecture.png" alt="Architecture: a loan pre-screen request enters the crew, hits a Tier-A prompt-injection guardrail that can hard-block the whole crew before any model call; if clean, the Loan Officer supervisor delegates to Intake, Credit and Risk, and Policy sub-agents which call Amazon Nova Pro; Traccia's governance plane blocks, redacts PII across every span, and stamps EU AI Act evidence, exporting to a local trace file or the Governance Hub via @govern" width="100%"/>
+</div>
+
 | Layer | Needs a key? | What it does |
 |-------|--------------|--------------|
 | **SDK / in-process** | No ($0, offline) | Guardrail detection, explicit hard-block, PII redaction, EU AI Act stamping, transparency evidence — all as OpenTelemetry span processors before export |
@@ -182,6 +186,9 @@ ai-agent-governance-aws/
 ├── src/
 │   ├── loan_crew.py         # the SYNTHETIC crew + all $0 SDK governance beats
 │   └── govern_platform.py   # Phase 2: @govern runtime enforcement (needs key)
+├── docs/
+│   ├── architecture.png     # the How It Works diagram
+│   └── architecture.html    # diagram source (Playwright-rendered)
 ├── iam/
 │   └── bedrock-invoke-policy.json   # least-privilege: Nova Pro invoke only
 ├── scripts/
