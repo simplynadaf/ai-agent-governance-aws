@@ -162,6 +162,18 @@ python -m src.loan_crew    # BLOCKED / CLEAN / REDACT / DISCLOSED, writes traces
 You will see the injection blocked, the crew run cleanly, PII redacted, and transparency
 evidence recorded. Inspect the trace file to see the governance signals on every span.
 
+Or run the full **scenario run book** — five named cases that exercise every decision path
+and every guardrail tier:
+
+```bash
+python -m src.demo_scenarios
+# [approve  ] A-42: score=730 (good)  dti=6%  -> APPROVE
+# [refer    ] A-13: score=630 (fair)  dti=20% -> REFER  [→ human review, Art. 14]
+# [decline  ] A-77: score=462 (poor)  dti=44% -> DECLINE
+# [eu_tier_c] A-99: score=766 (excellent)     -> APPROVE  [Tier-C tool denial detected]
+# [injection] A-42: BLOCKED (prompt_injection) before any model call
+```
+
 ### Step 4: The platform payoff (needs a Traccia key)
 
 ```bash
@@ -185,6 +197,10 @@ dashboard to see `@govern` hard-block the crew with an `AgentBlockedError`.
 ai-agent-governance-aws/
 ├── src/
 │   ├── loan_crew.py         # the SYNTHETIC crew + all $0 SDK governance beats
+│   ├── data.py              # synthetic applicants + deterministic mock credit model
+│   ├── tools.py             # mock credit_score + region-restricted bureau pull (Tier-C)
+│   ├── guardrails.py        # injection / PII / output-validation / fairness guardrails
+│   ├── demo_scenarios.py    # 5 named scenarios (approve/refer/decline/EU/injection)
 │   └── govern_platform.py   # Phase 2: @govern runtime enforcement (needs key)
 ├── docs/
 │   ├── architecture.png     # the How It Works diagram
