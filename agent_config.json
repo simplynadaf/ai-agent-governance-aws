@@ -1,0 +1,48 @@
+{
+  "agents": [
+    {
+      "id": "loan-prescreen",
+      "name": "Loan Decision Crew (SYNTHETIC)",
+      "type": "orchestrator",
+      "description": "SYNTHETIC, illustrative loan-officer supervisor. Runs a Tier-A prompt-injection guardrail at the boundary, delegates to the intake, credit/risk, and policy specialists, and synthesizes a one-line illustrative pre-screen recommendation. NOT a real lending decision.",
+      "owner": "Sarvar Nadaf",
+      "team": "platform-governance",
+      "org_id": "sarvar-cloud",
+      "consuming_teams": ["risk", "compliance"],
+      "eu_ai_act": {
+        "risk_tier": "high",
+        "annex_iii_category": "5b_creditworthiness"
+      }
+    },
+    {
+      "id": "intake",
+      "name": "Intake",
+      "type": "specialist",
+      "description": "SYNTHETIC specialist. Parses applicant text into an applicant id and requested amount. This is where PII lands, so Traccia PII redaction is demonstrated here.",
+      "owner": "Sarvar Nadaf",
+      "team": "platform-governance",
+      "org_id": "sarvar-cloud",
+      "consuming_teams": ["platform-governance"]
+    },
+    {
+      "id": "credit-risk",
+      "name": "Credit & Risk",
+      "type": "specialist",
+      "description": "SYNTHETIC specialist. Calls a MOCK credit_score tool (not a real bureau) and summarizes creditworthiness risk. Illustrative only.",
+      "owner": "Sarvar Nadaf",
+      "team": "platform-governance",
+      "org_id": "sarvar-cloud",
+      "consuming_teams": ["risk", "platform-governance"]
+    },
+    {
+      "id": "policy",
+      "name": "Policy",
+      "type": "specialist",
+      "description": "SYNTHETIC specialist. Applies an illustrative lending policy and returns a one-line pre-screen recommendation. NOT a real decision.",
+      "owner": "Sarvar Nadaf",
+      "team": "platform-governance",
+      "org_id": "sarvar-cloud",
+      "consuming_teams": ["compliance", "platform-governance"]
+    }
+  ]
+}

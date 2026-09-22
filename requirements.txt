@@ -1,0 +1,6 @@
+# AI Agent Governance on AWS — pinned, tested versions (verified 2026-09-22)
+# Stack: AWS Strands Agents + Amazon Nova Pro (Bedrock) + Traccia governance SDK.
+strands-agents[otel]==1.56.0
+strands-agents-tools==0.8.9
+traccia==0.1.29
+boto3==1.43.99

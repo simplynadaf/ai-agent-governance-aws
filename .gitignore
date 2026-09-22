@@ -1,0 +1,26 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+
+# Traccia trace output (regenerated on each run)
+traces.jsonl
+traces_*.jsonl
+
+# Secrets - never commit a real key.
+# Copy .env.example to .env and put your REAL key there. .env is ignored below,
+# so it can never be committed by accident. .env.example (placeholder only) IS tracked.
+.env
+.env.local
+.env.*.local
+
+# Local logs
+*.log
+
+# Internal working files - never publish (planning/research live in the project workspace)
+PENDING-NOTE.md
+research.md
+365-review-coverage.md
+video-plan.md
+sdk-reference/
+VERIFIED-*.md

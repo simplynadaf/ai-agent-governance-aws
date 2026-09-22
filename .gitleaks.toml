@@ -1,0 +1,30 @@
+# gitleaks config for ai-agent-governance-aws.
+# Extends the default ruleset, then allowlists this repo's INTENTIONAL demo
+# placeholders so CI does not fail on fixtures that are safe by design.
+#
+# The allowlist below is deliberately narrow: only documented example values and
+# clearly-synthetic demo data. It does NOT relax detection of real credentials.
+
+title = "ai-agent-governance-aws gitleaks config"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Known-safe demo placeholders and synthetic fixtures"
+
+regexes = [
+  '''your_traccia_api_key_here''',
+  # Synthetic PII used ONLY to demonstrate redaction (never real people).
+  '''john\.doe@example\.com''',
+  '''555-123-4567''',
+  '''123-45-6789''',
+  # Synthetic applicant ids / mock values in the demo.
+  '''A-\d{2}''',
+]
+
+paths = [
+  '''\.env\.example''',
+  # our own detection patterns live here (they are rules, not secrets)
+  '''scripts/pre-commit-secrets\.sh''',
+]
