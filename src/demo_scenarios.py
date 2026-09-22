@@ -41,9 +41,15 @@ def _run(name: str, applicant_id: str, raw_request: str | None = None):
 
 
 def main():
+    from src.config import preflight, ConfigError
     print("=" * 78)
     print("Loan Decision Crew (SYNTHETIC) - governance scenarios")
     print("=" * 78)
+    try:
+        preflight()
+    except ConfigError as e:
+        print(f"PREFLIGHT FAILED: {e}")
+        return
     _run("approve", "A-42")
     _run("refer", "A-13")
     _run("decline", "A-77")

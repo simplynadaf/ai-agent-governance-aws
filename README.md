@@ -174,6 +174,24 @@ python -m src.demo_scenarios
 # [injection] A-42: BLOCKED (prompt_injection) before any model call
 ```
 
+Then print a **plain-language governance report** from the trace (which agents ran, which
+guardrails fired and at which tier, decisions + reason codes, EU AI Act evidence coverage,
+and a PII-leak check):
+
+```bash
+python -m src.verify_trace
+# AGENTS THAT RAN: loan-prescreen · intake · credit-risk · policy
+# GUARDRAILS: prompt_injection (explicit) · pii (explicit) · output_validation (explicit) · tool_permission (heuristic)
+# DECISIONS: APPROVE [STRONG_PROFILE] · REFER [BORDERLINE, → human review] · DECLINE [HIGH_DTI, THIN_FILE, ...]
+# EU AI ACT: risk_tier 47/47 spans · annex_iii YES · Art.50 YES · integrity_hash YES · PII leak 0
+```
+
+Run the unit tests (pure logic, no AWS/LLM needed):
+
+```bash
+python -m pytest tests/ -q
+```
+
 ### Step 4: The platform payoff (needs a Traccia key)
 
 ```bash
@@ -197,16 +215,23 @@ dashboard to see `@govern` hard-block the crew with an `AgentBlockedError`.
 ai-agent-governance-aws/
 ├── src/
 │   ├── loan_crew.py         # the SYNTHETIC crew + all $0 SDK governance beats
-│   ├── data.py              # synthetic applicants + deterministic mock credit model
+│   ├── config.py            # env-driven settings, fail-fast preflight, retry + logging
+│   ├── data.py              # synthetic applicants, mock credit model, reason codes
 │   ├── tools.py             # mock credit_score + region-restricted bureau pull (Tier-C)
 │   ├── guardrails.py        # injection / PII / output-validation / fairness guardrails
+│   ├── verify_trace.py      # reads traces_gov.jsonl -> plain-language governance report
 │   ├── demo_scenarios.py    # 5 named scenarios (approve/refer/decline/EU/injection)
 │   └── govern_platform.py   # Phase 2: @govern runtime enforcement (needs key)
+├── tests/
+│   └── test_loan_crew.py    # unit tests: determinism, guardrails, policy, reason codes
 ├── docs/
 │   ├── architecture.png     # the How It Works diagram
 │   └── architecture.html    # diagram source (Playwright-rendered)
 ├── iam/
 │   └── bedrock-invoke-policy.json   # least-privilege: Nova Pro invoke only
+├── .github/workflows/
+│   ├── secret-scan.yml      # gitleaks CI
+│   └── tests.yml            # pytest CI
 ├── scripts/
 │   ├── pre-commit-secrets.sh        # secret-guard git hook
 │   └── install-hooks.sh

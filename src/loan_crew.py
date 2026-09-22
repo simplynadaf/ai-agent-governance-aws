@@ -47,14 +47,15 @@ from traccia.governance.hooks import enrich_governance_attributes
 from traccia.guardrails import guardrail_span
 from traccia.processors.redaction_processor import redact_string
 
-from src.data import SYNTHETIC_APPLICANTS, intake_text
+from src.data import SYNTHETIC_APPLICANTS, intake_text, reason_codes, REASON_CODE_LABELS
 from src.tools import credit_score, pull_bureau_report, ToolPermissionDenied
 from src.guardrails import (
     injection_check, output_validation_triggered, fairness_violation, GuardrailBlock,
 )
+from src.config import SETTINGS, POLICY_VERSION, MODEL_VERSION, with_retry, log
 
-REGION = "us-east-1"
-NOVA = "amazon.nova-pro-v1:0"
+REGION = SETTINGS.region
+NOVA = SETTINGS.model_id
 NOVA_PRICE = {"prompt": 0.0008, "completion": 0.0032}
 
 # ---------------------------------------------------------------------------------------------
@@ -82,7 +83,14 @@ class BlockedByGuardrail(Exception):
 
 
 def _model() -> BedrockModel:
-    return BedrockModel(model_id=NOVA, region_name=REGION, temperature=0.2, max_tokens=400)
+    return BedrockModel(model_id=NOVA, region_name=REGION,
+                        temperature=SETTINGS.temperature, max_tokens=SETTINGS.max_tokens)
+
+
+def _ask(agent: "Agent", prompt: str, what: str) -> str:
+    """Invoke a Strands agent with retry on transient Bedrock errors + structured logging."""
+    result = with_retry(lambda: agent(prompt), what=what)
+    return result.message["content"][0]["text"]
 
 
 # =============================================================================================
@@ -99,7 +107,7 @@ def intake(applicant_id: str) -> str:
             "state the applicant id and requested amount in one line. Illustrative only."
         ),
     )
-    return a(text).message["content"][0]["text"]
+    return _ask(a, text, "intake.llm")
 
 
 @observe(as_type="agent", name="credit_risk")
@@ -126,9 +134,11 @@ def credit_risk(applicant_id: str) -> dict:
             "and band, summarize risk in two sentences. Illustrative only, not real advice."
         ),
     )
-    summary = agent(
-        f"Applicant {applicant_id}: mock score {score['score']} ({score['band']}). {bureau_note}."
-    ).message["content"][0]["text"]
+    summary = _ask(
+        agent,
+        f"Applicant {applicant_id}: mock score {score['score']} ({score['band']}). {bureau_note}.",
+        "credit_risk.llm",
+    )
     return {"score": score, "bureau_note": bureau_note, "summary": summary}
 
 
@@ -152,9 +162,11 @@ def policy(applicant_id: str, score: int, band: str) -> dict:
             "reason, write a one-line ILLUSTRATIVE pre-screen note. Do NOT claim a real approval."
         ),
     )
-    note = agent(
-        f"Decision: {decision}. Score {score} ({band}), debt-to-income {dti:.0%}. Synthetic."
-    ).message["content"][0]["text"]
+    note = _ask(
+        agent,
+        f"Decision: {decision}. Score {score} ({band}), debt-to-income {dti:.0%}. Synthetic.",
+        "policy.llm",
+    )
     return {"decision": decision, "dti": round(dti, 3), "note": note}
 
 
@@ -204,28 +216,48 @@ def guarded_run(applicant_id: str, raw_request: str | None = None) -> dict:
     # [G13] Human oversight (Art. 14): borderline decisions are flagged for review.
     decision = pol["decision"]
     needs_review = decision == "refer"
+    codes = reason_codes(applicant_id, score_obj["score"])           # explainability / adverse action
     span.set_attribute("governance.decision", decision)
     span.set_attribute("governance.needs_human_review", needs_review)
+    span.set_attribute("governance.reason_codes", codes)
+    span.set_attribute("governance.policy_version", POLICY_VERSION)   # traceability (Art. 12)
+    span.set_attribute("governance.model_version", MODEL_VERSION)
 
     # [G9] Stronger per-decision evidence: input/output hashes, model id, session, risk tier.
     gov = enrich_governance_attributes(
         {}, event_type="inference", model_id=NOVA, input_text=text,
-        output_text=recommendation, session_id="session-loan-demo", eu_risk_tier="high",
+        output_text=recommendation, session_id=SETTINGS.session_id, eu_risk_tier="high",
     )
     for k, v in gov.items():
         span.set_attribute(k, v)
 
-    return {
+    # Structured, immutable-style DECISION RECORD (what a production high-risk system persists
+    # for audit). Reason codes make the decision explainable; versions make it reproducible.
+    record = {
         "applicant_id": applicant_id, "score": score_obj["score"], "band": score_obj["band"],
         "dti": pol["dti"], "decision": decision, "needs_human_review": needs_review,
+        "reason_codes": codes,
+        "reason_explanations": [REASON_CODE_LABELS[c] for c in codes],
+        "policy_version": POLICY_VERSION, "model_version": MODEL_VERSION,
         "bureau_note": cr["bureau_note"], "recommendation": recommendation,
+        "integrity_hash": gov.get("governance.integrity_hash"),
+        "synthetic": True,
     }
+    log.info("decision applicant=%s decision=%s score=%d reasons=%s review=%s",
+             applicant_id, decision, score_obj["score"], ",".join(codes), needs_review)
+    return record
 
 
 def _demo():
+    from src.config import preflight, ConfigError
     print("=" * 78)
     print("Loan Decision Crew (SYNTHETIC) - Traccia governance demo")
     print("=" * 78)
+    try:
+        preflight()
+    except ConfigError as e:
+        print(f"PREFLIGHT FAILED: {e}")
+        return
 
     # BEAT 1: injection blocked
     with traccia_span("loan_run_blocked") as root:

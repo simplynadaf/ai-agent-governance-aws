@@ -105,3 +105,38 @@ def mock_credit_score(applicant_id: str) -> dict:
         "signals_excluded": ["age", "name", "region", "gender", "ethnicity"],
         "source": "MOCK_MODEL (synthetic, not a real bureau)",
     }
+
+
+# Adverse-action / explainability reason codes. Real high-risk credit systems must give the
+# applicant the principal reasons for a decision (a legal requirement in many jurisdictions,
+# and an EU AI Act transparency/explainability signal). These are derived, not invented.
+REASON_CODE_LABELS = {
+    "HIGH_DTI": "Debt-to-income ratio is high",
+    "THIN_FILE": "Limited employment / credit history",
+    "LARGE_REQUEST": "Requested amount is large relative to income",
+    "LOW_SCORE": "Overall credit score below threshold",
+    "STRONG_PROFILE": "Strong income-to-debt and credit profile",
+    "BORDERLINE": "Profile is near the decision threshold",
+}
+
+
+def reason_codes(applicant_id: str, score: int) -> list[str]:
+    """Derive principal-reason codes for a decision (explainability / adverse action)."""
+    a = SYNTHETIC_APPLICANTS[applicant_id]
+    dti = a.existing_debt / max(a.annual_income, 1)
+    ratio = a.requested_amount / max(a.annual_income, 1)
+    codes: list[str] = []
+    if dti >= 0.40:
+        codes.append("HIGH_DTI")
+    if a.employment_years < 2:
+        codes.append("THIN_FILE")
+    if ratio > 0.40:
+        codes.append("LARGE_REQUEST")
+    if score < 600:
+        codes.append("LOW_SCORE")
+    # borderline band (fair) is itself a principal reason for a refer decision
+    if 600 <= score < 700:
+        codes.append("BORDERLINE")
+    if not codes:
+        codes.append("STRONG_PROFILE")
+    return codes
