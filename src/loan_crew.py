@@ -36,6 +36,7 @@ Governance coverage:
 """
 from __future__ import annotations
 
+import src._env  # noqa: F401  -- loads .env before any os.environ reads below
 import os
 
 from strands import Agent

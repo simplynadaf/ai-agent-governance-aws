@@ -7,6 +7,7 @@ model errors. This module centralizes all of that.
 """
 from __future__ import annotations
 
+import src._env  # noqa: F401  -- ensures .env is loaded before env reads
 import logging
 import os
 import time

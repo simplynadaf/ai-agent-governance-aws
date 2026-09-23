@@ -124,24 +124,47 @@ run's evidence lands in the Governance Hub.
 
 ## 🚀 Getting Started
 
-### Step 1: Clone and install
+### Quickstart (clone → key → run)
 
 ```bash
 git clone https://github.com/simplynadaf/ai-agent-governance-aws.git
 cd ai-agent-governance-aws
 
-python3 -m venv .venv && . .venv/bin/activate    # create + activate a clean venv
-pip install -r requirements.txt                  # pinned, tested versions
+make setup                 # venv + pinned deps + secret-guard hook + copies .env.example -> .env
 
-cp .env.example .env                             # your local config (ignored by git)
-bash scripts/install-hooks.sh                    # install the secret-guard pre-commit hook
+# (optional) paste your Traccia key into .env for the platform payoff:
+#   TRACCIA_API_KEY=...      and    TRACCIA_ENDPOINT=https://api.traccia.ai/v2/traces
+# The code AUTO-LOADS .env (python-dotenv) — no `source .env` needed.
+
+make demo                  # the three $0 governance beats  -> traces_gov.jsonl
+make verify                # plain-language governance report + 3-tier coverage
+make scenarios             # 5 named scenarios (approve/refer/decline/EU/injection)
+make test                  # unit tests
+make platform              # Phase 2: run the crew under @govern (needs the key + endpoint)
 ```
 
+Run `make help` to list every target. **`.env` is auto-loaded**, so a viewer just drops
+their key in `.env` and runs — nothing else to wire.
+
+<details>
+<summary>Manual steps (if you prefer not to use make)</summary>
+
+```bash
+python3 -m venv .venv && . .venv/bin/activate
+pip install -r requirements.txt
+cp .env.example .env                 # then paste your key(s); .env is git-ignored
+bash scripts/install-hooks.sh        # secret-guard pre-commit hook
+python -m src.loan_crew              # $0 beats
+python -m src.verify_trace           # report
+python -m src.govern_platform        # platform @govern (needs key + endpoint in .env)
+```
+</details>
+
 > 🔒 **Secrets stay local.** `.env` is git-ignored; only `.env.example` (a placeholder) is
-> tracked. Put your real `TRACCIA_API_KEY` in `.env`. The installed pre-commit hook
+> tracked. Put your real `TRACCIA_API_KEY` in `.env`. The pre-commit hook
 > (`scripts/pre-commit-secrets.sh`) blocks any commit that contains a real key.
 
-### Step 2: Set up AWS access (one time)
+### Set up AWS access (one time)
 
 ```bash
 # create the least-privilege policy (run with your own admin credentials)
@@ -153,20 +176,16 @@ aws iam create-policy \
 # in the Bedrock console (us-east-1).
 ```
 
-### Step 3: Run the three $0 governance beats (no key needed)
+### What the $0 beats show (no key needed)
 
-```bash
-python -m src.loan_crew    # BLOCKED / CLEAN / REDACT / DISCLOSED, writes traces_gov.jsonl
+`make demo` (or `python -m src.loan_crew`) writes `traces_gov.jsonl` and prints
+BLOCKED / CLEAN / REDACT / DISCLOSED: the injection blocked, the crew run cleanly, PII
+redacted, and transparency evidence recorded.
+
+The full **scenario run book** — five named cases that exercise every decision path and
+every guardrail tier (`make scenarios`):
+
 ```
-
-You will see the injection blocked, the crew run cleanly, PII redacted, and transparency
-evidence recorded. Inspect the trace file to see the governance signals on every span.
-
-Or run the full **scenario run book** — five named cases that exercise every decision path
-and every guardrail tier:
-
-```bash
-python -m src.demo_scenarios
 # [approve  ] A-42: score=730 (good)  dti=6%  -> APPROVE
 # [refer    ] A-13: score=630 (fair)  dti=20% -> REFER  [→ human review, Art. 14]
 # [decline  ] A-77: score=462 (poor)  dti=44% -> DECLINE
@@ -174,25 +193,18 @@ python -m src.demo_scenarios
 # [injection] A-42: BLOCKED (prompt_injection) before any model call
 ```
 
-Then print a **plain-language governance report** from the trace (which agents ran, which
-guardrails fired and at which tier, decisions + reason codes, EU AI Act evidence coverage,
-and a PII-leak check):
+The **plain-language governance report** from the trace (`make verify`):
 
-```bash
-python -m src.verify_trace
+```
 # AGENTS THAT RAN: loan-prescreen · intake · credit-risk · policy
-# GUARDRAILS: prompt_injection (explicit) · pii (explicit) · output_validation (explicit) · tool_permission (heuristic)
-# DECISIONS: APPROVE [STRONG_PROFILE] · REFER [BORDERLINE, → human review] · DECLINE [HIGH_DTI, THIN_FILE, ...]
-# EU AI ACT: risk_tier 47/47 spans · annex_iii YES · Art.50 YES · integrity_hash YES · PII leak 0
+# GUARDRAIL TIERS: A explicit YES · B provider-native (fires on model safety/stop) · C heuristic YES
+# DECISIONS: APPROVE [STRONG_PROFILE] · REFER [BORDERLINE, → human review] · DECLINE [HIGH_DTI, ...]
+# EU AI ACT: risk_tier N/N spans · annex_iii YES · Art.50 YES · integrity_hash YES · PII leak 0
 ```
 
-Run the unit tests (pure logic, no AWS/LLM needed):
+Unit tests (pure logic, no AWS/LLM needed): `make test`.
 
-```bash
-python -m pytest tests/ -q
-```
-
-### Step 4: The platform payoff (needs a Traccia key)
+### The platform payoff (needs a Traccia key)
 
 ```bash
 # put your key AND the endpoint in .env, then:
@@ -244,6 +256,7 @@ PLATFORM BLOCK — AgentBlockedError:
 ```
 ai-agent-governance-aws/
 ├── src/
+│   ├── _env.py              # auto-loads .env (python-dotenv) before any env read
 │   ├── loan_crew.py         # the SYNTHETIC crew + all $0 SDK governance beats
 │   ├── config.py            # env-driven settings, fail-fast preflight, retry + logging
 │   ├── data.py              # synthetic applicants, mock credit model, reason codes
@@ -251,6 +264,7 @@ ai-agent-governance-aws/
 │   ├── guardrails.py        # injection / PII / output-validation / fairness guardrails
 │   ├── verify_trace.py      # reads traces_gov.jsonl -> plain-language governance report
 │   ├── demo_scenarios.py    # 5 named scenarios (approve/refer/decline/EU/injection)
+│   └── govern_platform.py   # Phase 2: @govern runtime enforcement (needs key + endpoint)
 │   └── govern_platform.py   # Phase 2: @govern runtime enforcement (needs key)
 ├── tests/
 │   └── test_loan_crew.py    # unit tests: determinism, guardrails, policy, reason codes
@@ -267,6 +281,7 @@ ai-agent-governance-aws/
 │   └── install-hooks.sh
 ├── .github/workflows/
 │   └── secret-scan.yml              # gitleaks CI
+├── Makefile                         # one-command demo: make setup/demo/verify/platform/test
 ├── agent_config.json                # the 4 agents + EU AI Act metadata
 ├── requirements.txt                 # pinned, tested versions
 ├── .env.example                     # placeholder (real key goes in .env, git-ignored)

@@ -29,6 +29,7 @@ Run:  TRACCIA_API_KEY=... python govern_platform.py
 """
 from __future__ import annotations
 
+import src._env  # noqa: F401  -- loads .env before any os.environ reads below
 import os
 
 from traccia import init, govern, AgentBlockedError, force_flush
