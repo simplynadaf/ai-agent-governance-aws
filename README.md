@@ -115,10 +115,83 @@ run's evidence lands in the Governance Hub.
 
 ## 📋 Prerequisites
 
-- Python 3.10+
-- AWS credentials with `bedrock:InvokeModel` for Nova Pro (see [IAM](#-least-privilege-iam-policy))
-- Nova Pro model access enabled in the Bedrock console (us-east-1)
-- (Optional) A Traccia Govern-tier API key for the platform payoff — the three beats work without it
+You need three things. The first two are required for the crew to run at all; the third is
+only for the platform payoff (`@govern` + Governance Hub).
+
+### 1. Python 3.10+  (required)
+```bash
+python3 --version   # must be 3.10 or newer
+```
+
+### 2. AWS credentials with Amazon Nova Pro access  (required — the crew calls real Bedrock)
+The crew invokes `amazon.nova-pro-v1:0` in **us-east-1**. Without this the run fail-fasts
+with a clear message. Set it up once:
+
+```bash
+# a) Give your AWS identity permission to invoke Nova Pro (least-privilege policy included):
+aws iam create-policy \
+  --policy-name AgentGovernanceBedrockInvoke \
+  --policy-document file://iam/bedrock-invoke-policy.json
+#    ...then attach it to the IAM user/role you run the crew as.
+
+# b) Enable Nova Pro model access in the Bedrock console (us-east-1):
+#    Bedrock -> Model access -> enable "Amazon Nova Pro".
+
+# c) Make sure your credentials are available to the SDK (any ONE of these):
+aws configure            # stores ~/.aws/credentials, OR
+export AWS_PROFILE=you   # a named profile, OR
+#    an EC2/ECS instance role (no keys needed on AWS compute)
+```
+> ⚠️ **Do NOT put AWS secrets in `.env`.** Use the standard AWS credential chain above.
+> `.env` is only for the Traccia values below.
+
+### 3. Traccia API key + endpoint  (OPTIONAL — only for the platform payoff)
+The three `$0` governance beats (`make demo`) run **without any key**. To stream to the
+Traccia dashboard and unlock `@govern` enforcement, add your key + endpoint.
+
+**👉 Where to put them — edit the file `.env` in the repo root** (created for you by
+`make setup`; it is git-ignored, so your key is never committed):
+
+```dotenv
+# .env   (repo root — copied from .env.example)
+TRACCIA_API_KEY=your_traccia_api_key_here       # app.traccia.ai -> Settings -> API Keys
+TRACCIA_ENDPOINT=https://api.traccia.ai/v2/traces
+```
+
+That's it — the code auto-loads `.env` (no `source .env` needed). With the key set, all
+**traces, agents, spans, cost, guardrail findings, and EU AI Act evidence stream to YOUR
+Traccia dashboard automatically.**
+
+---
+
+### What appears in the Traccia UI automatically vs. what needs a dashboard action
+Be clear on this — it saves confusion:
+
+| Appears AUTOMATICALLY once the key is in `.env` | Needs a one-time DASHBOARD action (yours) |
+|---|---|
+| Agents, Traces, Spans, Cost & Attribution | Register the crew as an **AI System** (Compliance Hub → Add AI System) |
+| Guardrail findings, EU AI Act `risk_tier`, Art. 50 disclosure, integrity hash | **Human Review** on a trace, **Incident** log, **Evidence Pack** export, **FRIA** |
+| The governed run streaming under `@govern` | The actual **BLOCK** — requires a **policy** you create (see next) |
+
+### To make `@govern` actually BLOCK on your account (the on-camera payoff)
+`make platform` streams evidence, but returns **ALLOWED** until you create a blocking
+policy. Create this ONE policy in **your** dashboard:
+
+1. Traccia dashboard → **Policies** → **Create Policy** → choose **Loop Cap**.
+2. **Scope: Agent = `credit-risk`**  *(NOT `loan-prescreen` — the per-call check is attributed
+   to the sub-agent that makes the tool calls).*
+3. **Max Tool Calls Per Run = 1**, Enforcement = **Block**, then **Activate**.
+4. Run `make platform` → the crew's `credit-risk` sub-agent makes 2 tool calls, exceeds 1,
+   and the platform denies:
+   ```
+   PLATFORM BLOCK — AgentBlockedError:
+      reasons             : ['tool calls 2 exceed 1']
+      decision_id         : <uuid>
+   ```
+> Why a Loop Cap (not Spend Cap / Model Boundary): the crew's spans are tool calls with ~$0
+> cost, and Strands `BedrockModel` isn't an auto-patched LLM client — so only a tool-count
+> policy matches. Check **Policies → Decision Log** to see Matched vs No Match per trace.
+
 
 ---
 
@@ -163,18 +236,6 @@ python -m src.govern_platform        # platform @govern (needs key + endpoint in
 > 🔒 **Secrets stay local.** `.env` is git-ignored; only `.env.example` (a placeholder) is
 > tracked. Put your real `TRACCIA_API_KEY` in `.env`. The pre-commit hook
 > (`scripts/pre-commit-secrets.sh`) blocks any commit that contains a real key.
-
-### Set up AWS access (one time)
-
-```bash
-# create the least-privilege policy (run with your own admin credentials)
-aws iam create-policy \
-  --policy-name AgentGovernanceBedrockInvoke \
-  --policy-document file://iam/bedrock-invoke-policy.json
-
-# attach it to the user/role that runs the crew, and enable Nova Pro model access
-# in the Bedrock console (us-east-1).
-```
 
 ### What the $0 beats show (no key needed)
 
