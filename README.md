@@ -195,17 +195,47 @@ python -m pytest tests/ -q
 ### Step 4: The platform payoff (needs a Traccia key)
 
 ```bash
-# put your key in .env, then:
+# put your key AND the endpoint in .env, then:
 export $(grep -v '^#' .env | xargs)
 python -m src.govern_platform    # runs the crew under @govern(fail_open=False)
 ```
 
-Configure a **Spend Cap** or **Loop Cap** policy for agent `loan-prescreen` in the Traccia
-dashboard to see `@govern` hard-block the crew with an `AgentBlockedError`.
+> ⚠️ **`@govern` needs the endpoint, not just the key.** Set both `TRACCIA_API_KEY` and
+> `TRACCIA_ENDPOINT=https://api.traccia.ai/v2/traces` in `.env`. Without the endpoint the
+> SDK logs `"Traccia endpoint not found"` and silently SKIPS enforcement (the run returns
+> ALLOWED). `src/govern_platform.py` passes `endpoint=` for this reason.
 
-> 💡 No Traccia account needed for the three beats. Set the key in `.env` (copied from
-> `.env.example`) and the **same spans** stream to [app.traccia.ai](https://app.traccia.ai),
-> unlocking `@govern` enforcement + the Governance Hub.
+To see `@govern` hard-block the crew with an `AgentBlockedError`, create a **Loop Cap**
+policy in the dashboard:
+
+- **Policy type:** Loop Cap · **Max Tool Calls Per Run = 1** · Enforcement = **Block**
+- **Scope:** Agent = **`credit-risk`** (NOT `loan-prescreen` — see the note below)
+
+The crew's `credit-risk` sub-agent makes 2 tool calls (`credit_score` + `pull_bureau_report`),
+so it exceeds the cap and the platform denies:
+
+```
+PLATFORM BLOCK — AgentBlockedError:
+   reasons             : ['tool calls 2 exceed 1']
+   decision_id         : <uuid>
+   remaining_budget_usd: None
+```
+
+> 🧭 **Two lessons that trip everyone up (verified against the Decision Log):**
+> 1. **Scope the policy to the agent that ACTUALLY makes the calls.** This crew uses
+>    Strands `run_identity`, so the per-call policy check is attributed to the sub-agent
+>    (`credit-risk`), not the `@govern` entrypoint (`loan-prescreen`). A policy scoped to
+>    `loan-prescreen` shows **No Match** in `/policies/decisions`.
+> 2. **Match the policy TYPE to what the spans carry.** The crew's spans are tool calls with
+>    ~$0 cost, so a **Spend Cap** (matches on $) and a **Model Boundary** (needs an
+>    auto-patched LLM client; Strands `BedrockModel` isn't one) both show **No Match**. A
+>    **Loop Cap** counts tool calls, so it matches and blocks. The Decision Log's
+>    "N span checks -> No Match vs Denied" is your diagnostic.
+
+> 💡 No Traccia account needed for the three beats. Set the key + endpoint in `.env` (copied
+> from `.env.example`) and the **same spans** stream to [app.traccia.ai](https://app.traccia.ai),
+> unlocking `@govern` enforcement + the Governance Hub (registry, human review, incidents,
+> Evidence Packs, FRIA).
 
 ---
 

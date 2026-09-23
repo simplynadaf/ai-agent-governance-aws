@@ -24,3 +24,9 @@ research.md
 video-plan.md
 sdk-reference/
 VERIFIED-*.md
+
+# Internal session/recording/evidence notes for this build (never publish)
+SESSION-*.md
+VIDEO-SCRIPT-*.md
+EVIDENCE-INDEX.md
+evidence-samples/
