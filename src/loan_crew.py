@@ -73,7 +73,11 @@ _common = dict(
     pricing_override={NOVA: NOVA_PRICE},
 )
 if _PLATFORM_KEY:
-    init(api_key=_PLATFORM_KEY, **_common)
+    # Platform mode: stream to app.traccia.ai. enable_metrics=True so per-agent cost/token
+    # tiles aggregate on the dashboard (matches Article 1's working-cost setup).
+    init(api_key=_PLATFORM_KEY, use_otlp=True, enable_metrics=True,
+         enable_file_exporter=True, file_exporter_path="traces_gov.jsonl",
+         reset_trace_file=True, **_common)
 else:
     init(use_otlp=False, enable_metrics=False, enable_file_exporter=True,
          file_exporter_path="traces_gov.jsonl", reset_trace_file=True, **_common)
@@ -88,9 +92,54 @@ def _model() -> BedrockModel:
                         temperature=SETTINGS.temperature, max_tokens=SETTINGS.max_tokens)
 
 
+def _stamp_llm_usage(result, what: str) -> None:
+    """Stamp real Nova Pro token usage + cost on the CURRENT span.
+
+    Traccia does not auto-instrument Strands/Bedrock, so we read the usage off the Strands
+    EventLoopMetrics and stamp it. `llm.model` + span.type="LLM" are what Traccia's
+    processors key off to classify the span as an LLM call and sum tokens/cost in the
+    dashboard. Without this the agent shows $0.000 / 0 tok even though calls happened.
+    """
+    span = get_current_span()
+    if span is None:
+        return
+    try:
+        m = getattr(result, "metrics", None)
+        u = dict(getattr(m, "accumulated_usage", {}) or {})
+        inp = int(u.get("inputTokens", 0))
+        out = int(u.get("outputTokens", 0))
+    except Exception:
+        inp = out = 0
+    cost = round(inp / 1000 * NOVA_PRICE["prompt"] + out / 1000 * NOVA_PRICE["completion"], 8)
+
+    span.set_attribute("llm.model", NOVA)
+    span.set_attribute("span.type", "LLM")
+    span.set_attribute("llm.request.model", NOVA)
+    span.set_attribute("llm.vendor", "aws-bedrock")
+    span.set_attribute("llm.temperature", SETTINGS.temperature)
+    span.set_attribute("llm.max_tokens", SETTINGS.max_tokens)
+    span.set_attribute("llm.usage.prompt_tokens", inp)
+    span.set_attribute("llm.usage.completion_tokens", out)
+    span.set_attribute("llm.usage.total_tokens", inp + out)
+    span.set_attribute("llm.usage.source", "provider_usage")
+    span.set_attribute("llm.cost.usd", cost)
+    try:
+        latency_ms = dict(getattr(m, "accumulated_metrics", {}) or {}).get("latencyMs")
+        if latency_ms is not None:
+            span.set_attribute("llm.latency_ms", latency_ms)
+        stop = getattr(result, "stop_reason", None)
+        if stop:
+            span.set_attribute("llm.finish_reason", str(stop))
+    except Exception:
+        pass
+
+
 def _ask(agent: "Agent", prompt: str, what: str) -> str:
-    """Invoke a Strands agent with retry on transient Bedrock errors + structured logging."""
+    """Invoke a Strands agent with retry on transient Bedrock errors + structured logging.
+    Stamps real token usage + cost on the current span so the dashboard shows non-zero
+    cost/tokens per agent (Traccia does not auto-instrument Strands/Bedrock)."""
     result = with_retry(lambda: agent(prompt), what=what)
+    _stamp_llm_usage(result, what)
     return result.message["content"][0]["text"]
 
 
