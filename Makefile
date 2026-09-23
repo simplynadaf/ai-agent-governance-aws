@@ -2,8 +2,11 @@
 # .env is auto-loaded by the code (src/_env.py via python-dotenv), so you do NOT need to
 # `source .env`. Just: cp .env.example .env, paste your key, then `make demo`.
 
-PY ?= python
+# Auto-detect a Python 3 interpreter (python3 on most systems; python on some). Override:
+#   make PY=python3.11 setup
+PY ?= $(shell command -v python3 || command -v python)
 VENV ?= .venv
+VPY := $(VENV)/bin/python
 
 .DEFAULT_GOAL := help
 
@@ -13,26 +16,26 @@ help:  ## Show this help
 
 setup:  ## Create venv + install pinned deps + git hooks
 	$(PY) -m venv $(VENV)
-	$(VENV)/bin/pip install -U pip
-	$(VENV)/bin/pip install -r requirements.txt
+	$(VPY) -m pip install -U pip
+	$(VPY) -m pip install -r requirements.txt
 	@[ -f .env ] || cp .env.example .env
 	bash scripts/install-hooks.sh || true
 	@echo "Setup done. Put your TRACCIA_API_KEY in .env (optional — the \$$0 beats run without it)."
 
 demo:  ## Run the 3 governance beats ($0, no key needed) -> traces_gov.jsonl
-	$(VENV)/bin/python -m src.loan_crew
+	$(VPY) -m src.loan_crew
 
 scenarios:  ## Run the 5 named scenarios (approve/refer/decline/EU/injection)
-	$(VENV)/bin/python -m src.demo_scenarios
+	$(VPY) -m src.demo_scenarios
 
 verify:  ## Print the plain-language governance report + 3-tier coverage from the trace
-	$(VENV)/bin/python -m src.verify_trace
+	$(VPY) -m src.verify_trace
 
 platform:  ## Run the crew under @govern (needs TRACCIA_API_KEY + TRACCIA_ENDPOINT in .env)
-	$(VENV)/bin/python -m src.govern_platform
+	$(VPY) -m src.govern_platform
 
 test:  ## Run unit tests
-	$(VENV)/bin/python -m pytest tests/ -q
+	$(VPY) -m pytest tests/ -q
 
 all: demo verify test  ## $0 demo + report + tests
 
