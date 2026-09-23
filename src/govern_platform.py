@@ -67,7 +67,11 @@ from src.loan_crew import guarded_run, BlockedByGuardrail  # noqa: E402
 #  (A) before-body: agent-status check (fail_open=False -> raise if status cannot be verified),
 #  (B) turns on the per-call PEP so Spend Cap / Model Boundary / Loop Cap are evaluated on every
 #      instrumented LLM/tool call the crew makes (all sub-agents included).
-@govern(fail_open=False, name="loan_crew")
+# skip_args=["raw_request"]: @govern delegates to @observe, which captures every arg as a span
+# attribute (after apply_defaults), so an omitted raw_request becomes None -> OTel rejects None
+# ("Invalid type NoneType for attribute 'raw_request'"). Skipping it removes that warning and
+# keeps the raw (possibly injection/PII) request text out of span attributes.
+@govern(fail_open=False, name="loan_crew", skip_args=["raw_request"])
 def loan_crew_run(applicant_id: str, raw_request: str | None = None) -> dict:
     # guarded_run expects a real applicant id (e.g. "A-77"); the free-text prompt, if any,
     # is passed as raw_request so the injection guardrail still sees it.

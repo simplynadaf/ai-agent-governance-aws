@@ -223,7 +223,12 @@ def policy(applicant_id: str, score: int, band: str) -> dict:
 # =============================================================================================
 # The guarded crew entrypoint
 # =============================================================================================
-@observe(as_type="agent", name="loan_crew_guarded")
+# skip_args: @observe captures every arg as a span attribute (after apply_defaults),
+# so an omitted raw_request becomes None -> OTel rejects None ("Invalid type NoneType
+# for attribute 'raw_request'"). Skipping it removes that warning AND keeps the raw
+# (possibly injection/PII) request text out of the span attributes, which is correct
+# for a PII-redacting governance demo.
+@observe(as_type="agent", name="loan_crew_guarded", skip_args=["raw_request"])
 def guarded_run(applicant_id: str, raw_request: str | None = None) -> dict:
     span = get_current_span()
     span.set_attribute("eu_ai_act.annex_iii_category", "5b_creditworthiness")   # [G6]

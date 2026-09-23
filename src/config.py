@@ -47,6 +47,24 @@ class Settings:
 SETTINGS = Settings.from_env()
 
 
+# --------------------------------------------------- quiet benign OTel shutdown warnings
+# We call force_flush() explicitly at the end of each run, so all spans/metrics ARE
+# delivered. OpenTelemetry then ALSO runs its own atexit shutdown, which logs harmless
+# WARNINGs against the now-empty, already-shut-down exporters:
+#   "Exporter already shutdown, ignoring batch" / "shutdown can only be called once"
+# These are cosmetic double-shutdown notices (no telemetry is lost) but they clutter the
+# demo output. Raise ONLY these OTel exporter loggers to ERROR so real errors still show.
+# Override with OTEL_LOG_LEVEL if you want the raw warnings back.
+if "OTEL_LOG_LEVEL" not in os.environ:
+    for _otel_logger in (
+        "opentelemetry.exporter.otlp.proto.http.trace_exporter",
+        "opentelemetry.exporter.otlp.proto.http.metric_exporter",
+        "opentelemetry.exporter.otlp.proto.http._log_exporter",
+        "opentelemetry.sdk.metrics._internal",
+    ):
+        logging.getLogger(_otel_logger).setLevel(logging.ERROR)
+
+
 # ------------------------------------------------------------------ structured logging
 def get_logger(name: str = "loan_crew") -> logging.Logger:
     logger = logging.getLogger(name)
