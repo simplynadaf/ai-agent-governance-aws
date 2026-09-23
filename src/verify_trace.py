@@ -69,6 +69,27 @@ def main(path: str = "traces_gov.jsonl") -> int:
     else:
         print("  (none)")
 
+    # ---- explicit 3-tier coverage (A explicit / B provider-native / C heuristic) ----
+    # Honest reporting: state which tiers were OBSERVED in this trace. Tier B (provider-
+    # native: finish_reason / stop_reason / safety_ratings) only fires when the model itself
+    # returns a native safety/stop signal, so it may legitimately be "not observed" on a
+    # clean run. We do not claim a tier fired unless a real finding carries its source_type.
+    all_srcs = set()
+    for tiers in fired.values():
+        all_srcs |= tiers
+    tier_map = [
+        ("A", "explicit",        "@observe(as_type=guardrail) / guardrail_span"),
+        ("B", "provider_native", "model finish_reason / stop_reason / safety_ratings"),
+        ("C", "heuristic",       "tool-error denial keywords"),
+    ]
+    print("\nGUARDRAIL TIER COVERAGE (observed in this trace)")
+    for tier, src, desc in tier_map:
+        mark = "YES" if src in all_srcs else "not observed"
+        print(f"  · Tier {tier} ({src:15}) {mark:12} — {desc}")
+    if "provider_native" not in all_srcs:
+        print("    note: Tier B is provider-native; it fires only when the model returns a")
+        print("          safety/stop signal. Absence here is expected on a clean run, not a gap.")
+
     # ---- blocks ----
     blocks = [s for s in spans if A(s, "demo.crew.blocked")]
     print(f"\nHARD BLOCKS: {len(blocks)}  (crew stopped before/at the boundary)")

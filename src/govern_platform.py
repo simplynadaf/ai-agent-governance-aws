@@ -43,8 +43,13 @@ if not _KEY:
 # Initialize WITH the platform key so governance decisions + evidence reach the Governance Hub.
 # Keep the same governed identity + compliance posture as loan_crew.py so the dashboard shows
 # one coherent high-risk agent.
+# The endpoint MUST be set for @govern: the PEP reads config.tracing.endpoint to derive
+# the policy status/check URLs. Without it the SDK logs "endpoint not found" and skips
+# enforcement. Override via TRACCIA_ENDPOINT if your account uses a different base.
+_ENDPOINT = os.environ.get("TRACCIA_ENDPOINT", "https://api.traccia.ai/v2/traces").strip()
 init(
     api_key=_KEY,
+    endpoint=_ENDPOINT,
     agent_id="loan-prescreen",
     agent_name="Loan Decision Crew (SYNTHETIC)",
     env="dev",
@@ -62,8 +67,10 @@ from src.loan_crew import guarded_run, BlockedByGuardrail  # noqa: E402
 #  (B) turns on the per-call PEP so Spend Cap / Model Boundary / Loop Cap are evaluated on every
 #      instrumented LLM/tool call the crew makes (all sub-agents included).
 @govern(fail_open=False, name="loan_crew")
-def loan_crew_run(user_text: str) -> str:
-    return guarded_run(user_text)
+def loan_crew_run(applicant_id: str, raw_request: str | None = None) -> dict:
+    # guarded_run expects a real applicant id (e.g. "A-77"); the free-text prompt, if any,
+    # is passed as raw_request so the injection guardrail still sees it.
+    return guarded_run(applicant_id, raw_request=raw_request)
 
 
 def main():
@@ -77,9 +84,9 @@ def main():
     # Cap), this raises AgentBlockedError with the real decision fields. If no policy denies,
     # the crew runs and the whole run's governance evidence streams to the Governance Hub.
     try:
-        out = loan_crew_run("Pre-screen applicant A-77 requesting 8000. Applicant id: A-77.")
+        out = loan_crew_run("A-77", raw_request="Pre-screen applicant A-77 requesting 8000.")
         print("ALLOWED (no platform policy denied this run):")
-        print("  ", out.strip()[:200])
+        print("  ", str(out)[:200])
     except AgentBlockedError as e:
         # This is the on-camera platform BLOCK: networked policy stopped the crew.
         print("PLATFORM BLOCK — AgentBlockedError:")
