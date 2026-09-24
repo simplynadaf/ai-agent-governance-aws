@@ -8,9 +8,10 @@ traces.jsonl
 traces_*.jsonl
 
 # Secrets - never commit a real key.
-# Copy .env.example to .env and put your REAL key there. .env is ignored below,
-# so it can never be committed by accident. .env.example (placeholder only) IS tracked.
-.env
+# The repo SHIPS a .env with keys COMMENTED OUT (so `cat .env` proves $0/no-key and
+# there is one true filename - no .env.example). Put your REAL key in it locally; the
+# pre-commit hook blocks committing a .env that contains a real (uncommented) key.
+# Still ignore machine-local overrides:
 .env.local
 .env.*.local
 

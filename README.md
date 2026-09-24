@@ -149,11 +149,12 @@ export AWS_PROFILE=you   # a named profile, OR
 The three `$0` governance beats (`make demo`) run **without any key**. To stream to the
 Traccia dashboard and unlock `@govern` enforcement, add your key + endpoint.
 
-**👉 Where to put them - edit the file `.env` in the repo root** (created for you by
-`make setup`; it is git-ignored, so your key is never committed):
+**👉 Where to put them - edit the file `.env` in the repo root** (the repo already ships a
+`.env` with the keys commented out; just uncomment and fill them). Keep your real key
+commented or set it as a real env var - never commit an uncommented key:
 
 ```dotenv
-# .env   (repo root - copied from .env.example)
+# .env   (repo root - ships with these two lines commented out)
 TRACCIA_API_KEY=your_traccia_api_key_here       # app.traccia.ai -> Settings -> API Keys
 TRACCIA_ENDPOINT=https://api.traccia.ai/v2/traces
 ```
@@ -203,7 +204,7 @@ policy. Create this ONE policy in **your** dashboard:
 git clone https://github.com/simplynadaf/ai-agent-governance-aws.git
 cd ai-agent-governance-aws
 
-make setup                 # venv + pinned deps + secret-guard hook + copies .env.example -> .env
+make setup                 # venv + pinned deps + secret-guard hook (repo already ships .env, keys commented)
 
 # (optional) paste your Traccia key into .env for the platform payoff:
 #   TRACCIA_API_KEY=...      and    TRACCIA_ENDPOINT=https://api.traccia.ai/v2/traces
@@ -225,7 +226,7 @@ their key in `.env` and runs - nothing else to wire.
 ```bash
 python3 -m venv .venv && . .venv/bin/activate
 pip install -r requirements.txt
-cp .env.example .env                 # then paste your key(s); .env is git-ignored
+# the repo already ships .env (keys commented); edit it only for the platform payoff
 bash scripts/install-hooks.sh        # secret-guard pre-commit hook
 python -m src.loan_crew              # $0 beats
 python -m src.verify_trace           # report
@@ -233,9 +234,9 @@ python -m src.govern_platform        # platform @govern (needs key + endpoint in
 ```
 </details>
 
-> 🔒 **Secrets stay local.** `.env` is git-ignored; only `.env.example` (a placeholder) is
-> tracked. Put your real `TRACCIA_API_KEY` in `.env`. The pre-commit hook
-> (`scripts/pre-commit-secrets.sh`) blocks any commit that contains a real key.
+> 🔒 **Secrets stay local.** The repo ships `.env` with the keys **commented out** (no
+> secret). Uncomment and paste your real `TRACCIA_API_KEY` locally. The pre-commit hook
+> (`scripts/pre-commit-secrets.sh`) blocks any commit that contains a real (uncommented) key.
 
 ### What the $0 beats show (no key needed)
 
@@ -304,8 +305,8 @@ PLATFORM BLOCK - AgentBlockedError:
 >    **Loop Cap** counts tool calls, so it matches and blocks. The Decision Log's
 >    "N span checks -> No Match vs Denied" is your diagnostic.
 
-> 💡 No Traccia account needed for the three beats. Set the key + endpoint in `.env` (copied
-> from `.env.example`) and the **same spans** stream to [app.traccia.ai](https://app.traccia.ai),
+> 💡 No Traccia account needed for the three beats. Uncomment the key + endpoint in `.env`
+> (the repo ships it with them commented) and the **same spans** stream to [app.traccia.ai](https://app.traccia.ai),
 > unlocking `@govern` enforcement + the Governance Hub (registry, human review, incidents,
 > Evidence Packs, FRIA).
 
@@ -341,7 +342,7 @@ ai-agent-governance-aws/
 ├── Makefile                         # one-command demo: make setup/demo/verify/platform/test
 ├── agent_config.json                # the 4 agents + EU AI Act metadata
 ├── requirements.txt                 # pinned, tested versions
-├── .env.example                     # placeholder (real key goes in .env, git-ignored)
+├── .env                             # the ONE config file (ships with keys commented out)
 └── .gitleaks.toml
 ```
 

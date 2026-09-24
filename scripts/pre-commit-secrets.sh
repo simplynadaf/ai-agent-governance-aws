@@ -58,9 +58,20 @@ if echo "$added" | grep -oE '\b[0-9]{12}\b' | grep -vqE '111122223333|1234567890
   report "A 12-digit value that could be a real AWS account id was found (allowed examples: 111122223333, 123456789012)."
 fi
 
-# 7. Never allow a real .env (only .env.example is tracked).
-if echo "$staged" | grep -qxE '\.env|\.env\.local'; then
-  report "A real .env file is staged. Only .env.example should be committed."
+# 7. The repo ships a .env with keys COMMENTED OUT (one true filename, no .env.example).
+#    Allow committing .env ONLY if it carries no real (uncommented) key; still block
+#    machine-local .env.local / .env.*.local entirely.
+if echo "$staged" | grep -qxE '\.env\.local|\.env\..*\.local'; then
+  report "A machine-local .env.local file is staged. Never commit it."
+fi
+if echo "$staged" | grep -qxE '\.env'; then
+  # Inspect the staged .env content: an UNCOMMENTED TRACCIA_API_KEY / TRACCIA_ENDPOINT
+  # with a non-placeholder value is a real secret -> block. Commented (#...) lines are fine.
+  env_added="$(git diff --cached -- .env | grep -E '^\+' | grep -vE '^\+\+\+')"
+  if echo "$env_added" | grep -qE '^\+[[:space:]]*TRACCIA_API_KEY=.+' \
+     && ! echo "$env_added" | grep -qiE 'your_traccia_api_key_here|example|placeholder'; then
+    report "The staged .env contains a REAL (uncommented) TRACCIA_API_KEY. Comment it out before committing."
+  fi
 fi
 
 if [ "$fail" -ne 0 ]; then

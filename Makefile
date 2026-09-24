@@ -1,6 +1,7 @@
 # AI Agent Governance on AWS - one-command demo targets.
 # .env is auto-loaded by the code (src/_env.py via python-dotenv), so you do NOT need to
-# `source .env`. Just: cp .env.example .env, paste your key, then `make demo`.
+# `source .env`. The repo already ships a .env (keys commented out) - just paste your key
+# into it for the platform payoff, then `make demo`.
 
 # Auto-detect a Python 3 interpreter (python3 on most systems; python on some). Override:
 #   make PY=python3.11 setup
@@ -18,9 +19,8 @@ setup:  ## Create venv + install pinned deps + git hooks
 	$(PY) -m venv $(VENV)
 	$(VPY) -m pip install -U pip
 	$(VPY) -m pip install -r requirements.txt
-	@[ -f .env ] || cp .env.example .env
 	bash scripts/install-hooks.sh || true
-	@echo "Setup done. Put your TRACCIA_API_KEY in .env (optional - the \$$0 beats run without it)."
+	@echo "Setup done. The repo already has .env (keys commented). Paste your TRACCIA_API_KEY into .env for the platform payoff (optional - the \$$0 beats run without it)."
 
 demo:  ## Run the 3 governance beats ($0, no key needed) -> traces_gov.jsonl
 	$(VPY) -m src.loan_crew
