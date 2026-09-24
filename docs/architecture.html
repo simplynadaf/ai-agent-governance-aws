@@ -13,7 +13,7 @@
   }
   *{box-sizing:border-box;margin:0;padding:0;}
   body{background:#fff;font-family:var(--sans);color:var(--ink);}
-  .wrap{width:2064px;height:1432px;padding:52px 60px;position:relative;}
+  .wrap{width:2064px;min-height:auto;padding:52px 60px 44px;position:relative;}
   .title{font-size:30px;font-weight:700;letter-spacing:-0.01em;}
   .synthbadge{display:inline-block;margin-left:14px;font-family:var(--mono);font-size:13px;
     color:var(--amber);background:var(--amberSoft);border:1px solid #f0d9a8;border-radius:6px;padding:3px 10px;vertical-align:middle;}
@@ -53,7 +53,7 @@
   .beat.b3{border-color:#c9d9f0;background:var(--blueSoft);} .beat.b3 .n{color:var(--blue);}
   .sink{min-width:200px;text-align:center;}
 
-  .legend{position:absolute;bottom:32px;left:60px;display:flex;gap:36px;align-items:center;font-size:13.5px;color:var(--dim);}
+  .legend{position:relative;margin-top:40px;left:0;display:flex;gap:36px;align-items:center;font-size:13.5px;color:var(--dim);}
   .legend .k{font-family:var(--mono);font-size:11px;letter-spacing:0.07em;color:var(--faint);text-transform:uppercase;}
   .legend .item{display:flex;gap:9px;align-items:center;}
   .sw{width:28px;height:0;border-top:2.5px solid var(--purpleLine);}

@@ -268,9 +268,8 @@ Unit tests (pure logic, no AWS/LLM needed): `make test`.
 ### The platform payoff (needs a Traccia key)
 
 ```bash
-# put your key AND the endpoint in .env, then:
-export $(grep -v '^#' .env | xargs)
-python -m src.govern_platform    # runs the crew under @govern(fail_open=False)
+# put your key AND the endpoint in .env, then (the code auto-loads .env - no source needed):
+make platform    # runs the crew under @govern(fail_open=False)
 ```
 
 > ⚠️ **`@govern` needs the endpoint, not just the key.** Set both `TRACCIA_API_KEY` and
@@ -326,7 +325,6 @@ ai-agent-governance-aws/
 │   ├── verify_trace.py      # reads traces_gov.jsonl -> plain-language governance report
 │   ├── demo_scenarios.py    # 5 named scenarios (approve/refer/decline/EU/injection)
 │   └── govern_platform.py   # Phase 2: @govern runtime enforcement (needs key + endpoint)
-│   └── govern_platform.py   # Phase 2: @govern runtime enforcement (needs key)
 ├── tests/
 │   └── test_loan_crew.py    # unit tests: determinism, guardrails, policy, reason codes
 ├── docs/
@@ -340,8 +338,6 @@ ai-agent-governance-aws/
 ├── scripts/
 │   ├── pre-commit-secrets.sh        # secret-guard git hook
 │   └── install-hooks.sh
-├── .github/workflows/
-│   └── secret-scan.yml              # gitleaks CI
 ├── Makefile                         # one-command demo: make setup/demo/verify/platform/test
 ├── agent_config.json                # the 4 agents + EU AI Act metadata
 ├── requirements.txt                 # pinned, tested versions
