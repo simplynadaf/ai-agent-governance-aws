@@ -1,5 +1,5 @@
 """
-Phase 2 — PLATFORM governance payoff for the Loan Decision Crew (SYNTHETIC).
+Phase 2 - PLATFORM governance payoff for the Loan Decision Crew (SYNTHETIC).
 
 ============================================================================================
   SYNTHETIC / ILLUSTRATIVE. Not a real lender. See loan_crew.py header.
@@ -17,7 +17,7 @@ Requires the Traccia platform key (TRACCIA_API_KEY). We init WITH the key here s
   - the per-call PEP fires on every instrumented LLM/tool call inside the governed run
     (Spend Cap / Model Boundary / Loop Cap).
 
-IMPORTANT honest caveats (kept true to the SDK — see GOVERNANCE-DEEP-RESEARCH.md §6):
+IMPORTANT honest caveats (kept true to the SDK - see GOVERNANCE-DEEP-RESEARCH.md §6):
   - @govern defaults fail_open=True; we set fail_open=False for this high-risk crew, but the
     PER-CALL PEP is ALWAYS fail-open (a network blip cannot hard-block that call).
   - Whether a policy actually DENIES depends on the policies you configure in the dashboard
@@ -25,7 +25,7 @@ IMPORTANT honest caveats (kept true to the SDK — see GOVERNANCE-DEEP-RESEARCH.
     the crew runs normally and the evidence still streams to the Hub.
 
 Run:  TRACCIA_API_KEY=... python govern_platform.py
-      (or put the key in .env — it is git-ignored — and `export $(grep -v '^#' .env | xargs)`)
+      (or put the key in .env - it is git-ignored - and `export $(grep -v '^#' .env | xargs)`)
 """
 from __future__ import annotations
 
@@ -94,7 +94,7 @@ def main():
         print("  ", str(out)[:200])
     except AgentBlockedError as e:
         # This is the on-camera platform BLOCK: networked policy stopped the crew.
-        print("PLATFORM BLOCK — AgentBlockedError:")
+        print("PLATFORM BLOCK - AgentBlockedError:")
         print("   reasons             :", e.reasons)
         print("   decision_id         :", e.decision_id)
         print("   remaining_budget_usd:", e.remaining_budget_usd)

@@ -1,5 +1,5 @@
 """
-Named governance scenarios for the SYNTHETIC loan crew — a realistic "run book" that
+Named governance scenarios for the SYNTHETIC loan crew - a realistic "run book" that
 exercises every decision path and every guardrail tier, each producing distinct evidence.
 
 Run:  python -m src.demo_scenarios          # all scenarios, $0 local (traces_gov.jsonl)

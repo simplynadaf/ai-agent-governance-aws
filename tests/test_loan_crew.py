@@ -1,4 +1,4 @@
-"""Unit tests for the loan crew — pure logic, no AWS/LLM calls (fast, CI-runnable)."""
+"""Unit tests for the loan crew - pure logic, no AWS/LLM calls (fast, CI-runnable)."""
 from __future__ import annotations
 
 from src.data import mock_credit_score, reason_codes, SYNTHETIC_APPLICANTS, intake_text

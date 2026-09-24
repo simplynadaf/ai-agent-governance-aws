@@ -1,5 +1,5 @@
 """
-Tools for the SYNTHETIC loan crew. All mock — no real bureau, no real network calls.
+Tools for the SYNTHETIC loan crew. All mock - no real bureau, no real network calls.
 
 credit_score        : deterministic mock score (delegates to src.data.mock_credit_score)
 pull_bureau_report  : region-restricted; raises a PERMISSION-DENIED error for EU applicants,

@@ -16,7 +16,7 @@ from typing import Callable, TypeVar
 
 T = TypeVar("T")
 
-# Versions stamped onto every decision's evidence (traceability — EU AI Act Art. 12).
+# Versions stamped onto every decision's evidence (traceability - EU AI Act Art. 12).
 POLICY_VERSION = "loan-policy-v1.2.0"
 MODEL_VERSION = "amazon.nova-pro-v1:0"
 

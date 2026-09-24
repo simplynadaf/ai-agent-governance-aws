@@ -1,5 +1,5 @@
 """
-Loan Decision Crew (SYNTHETIC) — a governance demo for Traccia + AWS Strands + Nova Pro.
+Loan Decision Crew (SYNTHETIC) - a governance demo for Traccia + AWS Strands + Nova Pro.
 
 ============================================================================================
   THIS IS AN ILLUSTRATIVE, SYNTHETIC SYSTEM. It is NOT a real lender, makes NO real credit
@@ -31,7 +31,7 @@ Governance coverage:
   [G8] Automatic governance enrichment (event_type, timestamp_source, integrity_hash)
   [G9] Manual enrich_governance_attributes() input/output hashes
   [G11] Output-validation guardrail (block absolute/unsafe claims)
-  [G12] Fairness guardrail (block if a protected attribute drove the score) — EU AI Act
+  [G12] Fairness guardrail (block if a protected attribute drove the score) - EU AI Act
   [G13] Human-oversight hook (Art. 14): borderline -> needs_human_review
 """
 from __future__ import annotations
@@ -241,7 +241,7 @@ def guarded_run(applicant_id: str, raw_request: str | None = None) -> dict:
         span.set_attribute("demo.crew.blocked", True)
         raise BlockedByGuardrail("Prompt injection detected - crew blocked before any model call.")
 
-    # [G3] PII scanner (warn) — records a finding; redaction [G5] still masks the values.
+    # [G3] PII scanner (warn) - records a finding; redaction [G5] still masks the values.
     with guardrail_span("pii_scanner", category="pii", enforcement_mode="warn") as gs:
         gs.set_attribute("guardrail.triggered", ("@" in text) or any(c.isdigit() for c in text))
 

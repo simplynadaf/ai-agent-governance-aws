@@ -8,7 +8,7 @@ Synthetic applicant data + a deterministic mock credit model for the loan-decisi
 
 The model is DETERMINISTIC (same input -> same score) so the demo is reproducible on camera
 and in tests. It deliberately uses ONLY legitimate financial signals (income, existing debt,
-requested amount, employment years) and NEVER a protected attribute — the fairness guardrail
+requested amount, employment years) and NEVER a protected attribute - the fairness guardrail
 in guardrails.py asserts exactly that.
 """
 from __future__ import annotations

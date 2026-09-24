@@ -1,5 +1,5 @@
 """
-Guardrails for the SYNTHETIC loan crew — covering every Traccia guardrail tier + category.
+Guardrails for the SYNTHETIC loan crew - covering every Traccia guardrail tier + category.
 
 Tier A (explicit, @observe(as_type="guardrail") / guardrail_span):
   - prompt_injection_detector   (block)   -> stops the whole crew before any model call
@@ -7,7 +7,7 @@ Tier A (explicit, @observe(as_type="guardrail") / guardrail_span):
   - output_validation           (block)   -> rejects unsafe/absolute recommendations
   - fairness_check              (block)   -> rejects any decision that used a protected attribute
 
-Tier C (heuristic) fires automatically when a tool span errors with a denial keyword — we
+Tier C (heuristic) fires automatically when a tool span errors with a denial keyword - we
 demonstrate it with a region-restricted bureau pull (see tools.py: pull_bureau_report).
 
 All of these are DETECTION + our own control-flow enforcement (the SDK's guardrail engine is

@@ -4,7 +4,7 @@ Read traces_gov.jsonl and print a plain-language GOVERNANCE report.
 Like a compliance officer's at-a-glance view: which agents ran, which guardrails fired
 (and at which tier), the decisions + reason codes, PII-redaction confirmation, and the
 EU AI Act evidence stamped on the run. Everything printed is read straight from the trace
-file — nothing invented.
+file - nothing invented.
 
 Run:  python -m src.verify_trace            # reads traces_gov.jsonl
       python -m src.verify_trace path.jsonl
@@ -62,7 +62,7 @@ def main(path: str = "traces_gov.jsonl") -> int:
                 fired[finding.get("category")].add(finding.get("source_type"))
         except Exception:
             pass
-    print("\nGUARDRAILS DETECTED  (category — tier)")
+    print("\nGUARDRAILS DETECTED  (category - tier)")
     if fired:
         for cat, tiers in sorted(fired.items()):
             print(f"  · {cat:20} {', '.join(sorted(tiers))}")
@@ -85,7 +85,7 @@ def main(path: str = "traces_gov.jsonl") -> int:
     print("\nGUARDRAIL TIER COVERAGE (observed in this trace)")
     for tier, src, desc in tier_map:
         mark = "YES" if src in all_srcs else "not observed"
-        print(f"  · Tier {tier} ({src:15}) {mark:12} — {desc}")
+        print(f"  · Tier {tier} ({src:15}) {mark:12} - {desc}")
     if "provider_native" not in all_srcs:
         print("    note: Tier B is provider-native; it fires only when the model returns a")
         print("          safety/stop signal. Absence here is expected on a clean run, not a gap.")
