@@ -54,6 +54,7 @@ from src.guardrails import (
     injection_check, output_validation_triggered, fairness_violation, GuardrailBlock,
 )
 from src.config import SETTINGS, POLICY_VERSION, MODEL_VERSION, with_retry, log
+from src.agent_providers import agent_identity_provider, flush_agent_providers
 
 REGION = SETTINGS.region
 NOVA = SETTINGS.model_id
@@ -248,12 +249,13 @@ def guarded_run(applicant_id: str, raw_request: str | None = None) -> dict:
     with guardrail_span("pii_scanner", category="pii", enforcement_mode="warn") as gs:
         gs.set_attribute("guardrail.triggered", ("@" in text) or any(c.isdigit() for c in text))
 
-    # Crew: intake -> credit_risk -> policy. Each runs under its OWN agent identity so it
-    # registers as a distinct agent on the Traccia dashboard (run_identity wraps the call so
-    # the @observe agent span is stamped with the right agent.id, per agent_config.json).
-    with runtime_config.run_identity(agent_id="intake", agent_name="Intake"):
+    # Crew: intake -> credit_risk -> policy. Each specialist runs under its OWN provider
+    # whose RESOURCE identity is that agent, so its spans export with
+    # resource.agent.id = intake/credit-risk/policy and the Governance Hub files them as
+    # that agent's own traces (not just a span-level attribute under the orchestrator).
+    with agent_identity_provider(agent_id="intake", agent_name="Intake"):
         intake(applicant_id)
-    with runtime_config.run_identity(agent_id="credit-risk", agent_name="Credit & Risk"):
+    with agent_identity_provider(agent_id="credit-risk", agent_name="Credit & Risk"):
         cr = credit_risk(applicant_id)
     score_obj = cr["score"]
 
@@ -262,7 +264,7 @@ def guarded_run(applicant_id: str, raw_request: str | None = None) -> dict:
         span.set_attribute("demo.crew.blocked", True)
         raise GuardrailBlock("output_validation", "Fairness violation: a protected attribute influenced the score.")
 
-    with runtime_config.run_identity(agent_id="policy", agent_name="Policy"):
+    with agent_identity_provider(agent_id="policy", agent_name="Policy"):
         pol = policy(applicant_id, score_obj["score"], score_obj["band"])
     recommendation = pol["note"]
 
@@ -354,6 +356,7 @@ def _demo():
     print(f'  input : "{sample}"')
     print(f"  result: REDACT - {redact_string(sample)}")
 
+    flush_agent_providers(6.0)
     force_flush(6.0)
     print("\nRUN-DONE")
 
