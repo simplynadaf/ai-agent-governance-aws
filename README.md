@@ -11,6 +11,8 @@
 [![EU AI Act](https://img.shields.io/badge/Maps%20to-EU%20AI%20Act-003399?style=for-the-badge)](https://artificialintelligenceact.eu/)
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache%202.0-A855F7?style=for-the-badge)](LICENSE)
 
+[![Watch the demo](https://img.shields.io/badge/▶%20Watch%20the%20demo-YouTube-FF0000?style=for-the-badge&logo=youtube&logoColor=white)](https://www.youtube.com/watch?v=KO7IZ75rpqY)
+
 </div>
 
 > [!WARNING]
