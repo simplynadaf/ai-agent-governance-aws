@@ -75,6 +75,46 @@ Applies a synthetic lending policy and returns a one-line illustrative pre-scree
 
 ---
 
+## 📸 What it looks like on the platform (real, verified)
+
+Every screenshot below is a real run against the live Traccia platform. The loan crew is
+SYNTHETIC, but the governance decisions, numbers, and evidence are real.
+
+### The real block, in the Decision Log
+The per-call policy engine denies the runaway `credit-risk` sub-agent. The `No Match` rows
+above the `Denied` row are the diagnostic journey (Model Boundary and Spend Cap did not
+match; the Loop Cap did).
+
+<div align="center">
+<img src="docs/screenshots/decision-log.png" alt="Traccia Decision Log: a Denied row for the Loop Cap on the credit-risk agent, reason 'tool calls 2 exceed 1', with earlier No Match rows above it" width="100%"/>
+</div>
+
+### The active Loop Cap policy
+<div align="center">
+<img src="docs/screenshots/policy-active.png" alt="Traccia Policies view showing one active Loop Cap policy scoped to the credit-risk agent, enforcement Block" width="100%"/>
+</div>
+
+### The Compliance Hub (record-keeping, oversight, incidents)
+Readiness 85, one registered high-risk AI System, one pending human review, one open
+incident. All non-zero, all traced back to the single blocked run.
+
+<div align="center">
+<img src="docs/screenshots/compliance-hub.png" alt="Traccia Compliance Hub: Readiness 85, AI Systems 1, Pending Reviews 1, Open Incidents 1" width="100%"/>
+</div>
+
+### The hash-sealed Audit Bundle (Art. 12 / Annex VIII)
+<div align="center">
+<img src="docs/screenshots/audit-bundle.png" alt="Traccia Audit Bundle export for the Loan Decision Crew (SYNTHETIC), High risk, 3 agents" width="100%"/>
+</div>
+
+### The FRIA wizard (Art. 27) and per-agent cost attribution
+<div align="center">
+<img src="docs/screenshots/fria.png" alt="Traccia FRIA wizard tied to the registered high-risk AI system" width="49%"/>
+<img src="docs/screenshots/agent-cost-attribution.png" alt="Traccia agent detail: 37 executions, 43 percent error rate, 7-day cost about $0.002, guardrail posture" width="49%"/>
+</div>
+
+---
+
 ## 🔥 The Three Governance Beats (all reproducible at $0)
 
 ### 🚫 Beat 1 - Hard-block a prompt injection
